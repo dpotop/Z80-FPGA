@@ -43,7 +43,6 @@
 ;  Added interrupt handling
 
 SerialPort:     EQU     010H            ; This the serial output port
-SERIAL_STATUS:  EQU 0x11
 
 
 SPACE:          EQU     020H            ; Space
@@ -113,10 +112,7 @@ RST08:  EX (SP),HL                      ;*** TSTC OR RST 08H ***
 CRLF:
         LD A,CR                         ;*** CRLF ***
 
-RST10:  PUSH AF                         ;*** OUTC OR RST 10H ***
-        LD A,(OCSW)                     ;PRINT CHARACTER ONLY
-        OR A                            ;IF OCSW SWITCH IS ON
-        JP OUTC                         ;REST OF THIS AT OUTC
+RST10:  JP OUTC                         ;REST OF THIS AT OUTC
 
 RST18:  CALL EXPR2                      ;*** EXPR OR RST 18H ***
         PUSH HL                         ;EVALUATE AN EXPRESSION
@@ -1566,9 +1562,6 @@ INIT:
         OUT (0x40), A
 
 
-        CALL SERIAL_INIT        ;INITIALIZE THE SIO
-
-
         LD D,19H
 PATLOP:
         CALL CRLF
@@ -1585,50 +1578,20 @@ PATLOP:
         LD (TXTUNF),HL
         JP RSTART
 OUTC:
-        JR OUTC2
-        ;-- Z80-FPGA: Modificado para que siempre salte a OUTC2
-        ;JR NZ,OUTC2         ;IT IS ON
-        POP AF                          ;IT IS OFF
-        RET                             ;RESTORE AF AND RETURN
-OUTC2:
-        CALL TX_RDY         ;SEE IF TRANSMIT IS AVAILABLE
-        POP AF                          ;RESTORE THE REGISTER
         OUT (SerialPort),A      ;SEND THE BYTE
         CP CR
         RET NZ
         LD A,LF
-        RST 10H
+	OUT (SerialPort),A
         LD A,CR
         RET
 CHKIO:
-        CALL RX_RDY         ;CHECK IF CHARACTER AVAILABLE
-        RET Z                           ;RETURN IF NO CHARACTER AVAILABLE
-
-        ;-- Z80-FPGA
-        ;-- Debug: Sacar el caracter recibido por los LEDs
-        out (0x40), A
-
-        PUSH BC                         ;IF IT'S A LF, IGNORE AND RETURN
-        LD B,A                          ; AS IF THERE WAS NO CHARACTER.
-        SUB LF
-        JR Z,CHKIO2
-        LD A,B                          ;OTHERWISE RESTORE 'A' AND 'BC'
-        POP BC                          ; AND CONTINUE ON.
-
-        CP 0FH                          ;IS IT CONTROL-0?
-        JR NZ,CI1                       ;NO, MORE CHECKING
-        LD A,(OCSW)                     ;CONTROL-0 FLIPS OCSW
-        CPL                             ;ON TO OFF, OFF TO ON
-        LD (OCSW),A
-        JR CHKIO                        ;GET ANOTHER INPUT
-CHKIO2:
-        LD A,00H                        ;CLEAR A
-        OR A                            ;ZET THE Z-FLAG
-        POP BC                          ;RESTORE THE 'BC' PAIR
-        RET                             ;RETURN WITH 'Z' SET.
-CI1:
+	; DPB: read one character. If it's zero,
+	; it means no input is available 	
+	IN A,(SerialPort)
+        RET Z 			; Return if no character
         CP 03H                          ;IS IT CONTROL-C?
-        RET NZ                          ;NO, RETURN "NZ"
+        RET NZ                          ;If not, return
         JP RSTART                       ;YES, RESTART TBI
 
 
@@ -1766,53 +1729,6 @@ EX5:
 ;-------------------------------------------------------------------------------
 ;COMPUTER SPECIFIC ROUTINES.
 ;-------------------------------------------------------------------------------
-SERIAL_INIT:
-
-    ; This routine is for initializing your serial port.
-
-;-- Z80-FPGA: No necesitamos inicializar nada del puerto serie
-
-        RET
-;-------------------------------------------------------------------------------
-TX_RDY:
-    ; This routine is checking if the Serial Port is ready to send
-    ; a character.
-
-    ;-- Leer registro de estaus de la UART
-    ;-- ¿Se puede enviar?
-    IN A, (SERIAL_STATUS)
-    AND 0x01
-    JP NZ, TX_RDY ;-- No--> Esperar
-    RET
-    ;-- Listo para transmitir
-
-;-------------------------------------------------------------------------------
-RX_RDY:
-
-    ; This routine is for checking if a character is available over
-    ; serial. If a character is available, it returns to the calling
-    ; function with the character in 'A' and the Z-flag reset.
-    ; However, if a character is not available, it returns with the
-    ; Z-flag set.
-
-    ;-- Comprobar si hay caracter disponible
-    in A, (SERIAL_STATUS)
-    and 0x2
-    jr z, no_char ;-- No hay
-
-    ;-- Leer el caracter que ha llegado
-    in A, (SerialPort)
-
-    ;-- Retornar. A contiene el caracter recibido
-    ;-- Z debe ser 0
-    RET
-
-no_char:
-    ;-- No hay caracter disponible
-    ;-- Poner Z a uno
-    CP A
-    ret
-
         RET
 ;-------------------------------------------------------------------------------
 ;///////////////////////////////////////////////////////////////////////////////
