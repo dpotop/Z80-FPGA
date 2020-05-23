@@ -3,6 +3,9 @@ I use the Z80 port of Obijuan which I forked and then modified.
 Obijuan's code is already quite size-optimized, but there is space for 
 further improvement (which I already started).
 
+The next step will be to make the interpreter modular, and possibly
+transform it into a compiler.
+
 Z80 instruction set
 * z80 manual search on Google
 * http://clrhome.org/table/
