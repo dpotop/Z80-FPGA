@@ -1,4 +1,6 @@
-SerialPort:     EQU     010H            ; This the serial output port
+	;; Copyright in the parent project from which I forked	
+
+SerialPort:     EQU     010H            ; This the serial I/O port
 
 
 SPACE:          EQU     020H            ; Space
@@ -61,7 +63,7 @@ RST10:
 RST18:  CALL EXPR2                      ;*** EXPR OR RST 18H ***
         PUSH HL                         ;EVALUATE AN EXPRESSION
         JP EXPR1                        ;REST OF IT AT EXPR1
-        DB 'W'
+        NOP
 
 RST20:  LD A,H                          ;*** COMP OR RST 20H ***
         CP D                            ;COMPARE HL WITH DE
@@ -69,7 +71,8 @@ RST20:  LD A,H                          ;*** COMP OR RST 20H ***
         LD A,L                          ;Z FLAGS
         CP E                            ;BUT OLD A IS LOST
         RET
-        DB 'AN'
+        NOP
+	NOP
 
 SS1:
 RST28:  LD A,(DE)                       ;*** IGNBLK/RST 28H ***
@@ -81,7 +84,7 @@ RST28:  LD A,(DE)                       ;*** IGNBLK/RST 28H ***
 RST30:  POP AF                          ;*** FINISH/RST 30H ***
         CALL FIN                        ;CHECK END OF COMMAND
         JP QWHAT                        ;PRINT "WHAT?" IF WRONG
-        DB 'G'
+        NOP
 
 RST38:  RST 28H                         ;*** TSTV OR RST 38H ***
         SUB 40H                         ;TEST VARIABLES
@@ -173,11 +176,6 @@ AHOW:
         LD DE,HOW
         JP ERROR_ROUTINE
 
-
-HOW:    DB "HOW?",CR
-OK:     DB "OK",CR
-WHAT:   DB "WHAT?",CR
-SORRY:  DB "SORRY",CR
 
 ;*************************************************************
 ;
@@ -1501,16 +1499,6 @@ PU1:
 INIT:
         DI
 
-        ;---- Z80-FPGA: Debug! Comprobar si se encienden los leds
-        LD A,0x01
-        OUT (0x40), A
-
-
-        LD D,19H
-PATLOP:
-        CALL CRLF
-        DEC D
-        JR NZ,PATLOP
         SUB A
         LD DE,MSG1          ;PRINT THE BOOT MESSAGES
         CALL PRTSTG
@@ -1533,21 +1521,14 @@ OUTC2:
 
 CHKIO:
 	; DPB: read one character. If it's zero,
-				; it means no input is available
-	; LD A, 0xEE
-	;OUT (SerialPort), A
+	; it means no input is available
 	IN A,(SerialPort)
 	AND A   			; Check if it's zero
         JP Z,CHKIO2 			; Return if no character
-	;OUT (SerialPort), A		; Debug print
         CP 03H                          ; IS IT CONTROL-C?
         JP Z,RSTART                     ; YES, RESTART TBI
 CHKIO2:	RET
 
-
-MSG1:   DB   ESC,"[2J",ESC,"[H"         ;SCREEN CLEAR
-        DB   'Z80 TINY BASIC 2.0g',CR       ;BOOT MESSAGE
-MSG2:   DB   'PORTED BY DOUG GABBARD, 2017',CR
 
 ;*************************************************************
 ;
@@ -1678,6 +1659,18 @@ EX5:
 ;-------------------------------------------------------------------------------
 ;///////////////////////////////////////////////////////////////////////////////
 ;-------------------------------------------------------------------------------
+
+HOW:    DB "HOW?",CR
+OK:     DB "OK",CR
+WHAT:   DB "WHAT?",CR
+SORRY:  DB "SORRY",CR
+MSG1:   DB   ESC,"[2J",ESC,"[H"         ;SCREEN CLEAR
+        DB   'Z80 TINY BASIC 2.0g',CR       ;BOOT MESSAGE
+MSG2:   DB   'PORTED BY D. GABBARD, 2017',CR
+
+
+
+
 	;; Prior to this, everything is ROM
 	;; RAM organization
 LSTROM:
