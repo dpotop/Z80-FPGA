@@ -52,8 +52,8 @@ CRLF:
 
 RST10:
 	JP OUTC                         ;REST OF THIS AT OUTC
-	NOP
-	NOP
+	NOP				; Need these NOPs in order to
+	NOP				; align RST18
 	NOP
 	NOP
 	NOP
