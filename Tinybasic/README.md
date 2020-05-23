@@ -1,4 +1,7 @@
-
+This is the TinyBasic ROM I want to install on my Z80-based home computer.
+I use the Z80 port of Obijuan which I forked and then modified.
+Obijuan's code is already quite size-optimized, but there is space for 
+further improvement (which I already started).
 
 Z80 instruction set
 * z80 manual search on Google
