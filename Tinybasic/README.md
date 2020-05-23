@@ -3,8 +3,9 @@ I use the Z80 port of Obijuan which I forked and then modified.
 Obijuan's code is already quite size-optimized, but there is space for 
 further improvement (which I already started).
 
-The next step will be to make the interpreter modular, and possibly
-transform it into a compiler.
+The next step will be to make the interpreter modular to make it easier to
+understand. Then, possibly work towards more compilation and less interpreting. 
+Of course, as the I/O interface evolves this may evolve, too.
 
 Z80 instruction set
 * z80 manual search on Google
