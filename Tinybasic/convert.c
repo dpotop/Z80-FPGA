@@ -9,9 +9,9 @@ void print_hex(unsigned char c) {
 }
 
 int main(void) {
-  FILE* fis = fopen("Basic.bin","r") ;
+  FILE* fis = fopen("basic.bin","r") ;
   if(fis == NULL) {
-    printf("Cannot open file Basic.asm\n") ;
+    printf("Cannot open file basic.bin\n") ;
     exit(0) ;
   }
   fseek(fis, 0L, SEEK_END);
