@@ -1,47 +1,3 @@
-;*************************************************************
-;
-;                 TINY BASIC FOR ZILOG Z80
-;                       VERSION 2.0
-;                     BY LI-CHEN WANG
-;
-;                  MODIFIED AND TRANSLATED
-;                    TO INTEL MNEMONICS
-;                     BY ROGER RAUSKOLB
-;                      10 OCTOBER,1976
-;
-;                  MODIFIED AND TRANSLATED
-;                    TO ZILOG MNEMONICS
-;                      BY DOUG GABBARD
-;            www.retrodepot.net
-;
-;           RELEASED TO THE PUBLIC
-;                      10 OCTOBER,2017
-;                  YEAH, 41 YEARS LATER....
-;
-;                         @COPYLEFT
-;                   ALL WRONGS RESERVED
-;
-;*************************************************************
-; This code is derived from the original 8080 Tiny Basic.
-; It was first compiled in 8080 Mnemonics, then disassembled
-; into Zilog Mnemonics.  And then checked against the original
-; to ensure accuracy.  It was then partially enhanced with z80
-; specific code. And once done, it was then modified to work
-; with the G80-S Micro Computer. However, that portion of the
-; code has been left out in order to make this code a little
-; more portable.  There are only three routines that one needs
-; to write, and specifing the serial port's I/O address, in
-; order to make this version work with your own DIY computer.
-; Those routines can be found at the end of the source code.
-;
-; I hope you find good use for this relic. However, I would
-; ask that if you do find use for it, please put a reference
-; to me in your work. And please, distribute freely.
-;*************************************************************
-; Notes for JTFrame version:
-;  Adapted to work with GNU z80asm
-;  Added interrupt handling
-
 SerialPort:     EQU     010H            ; This the serial output port
 
 
@@ -60,25 +16,6 @@ CTRLS:          EQU     013H            ; Control "S"
 CTRLU:          EQU     015H            ; Control "U"
 ESC:            EQU     01BH            ; Escape
 DEL:            EQU     07FH            ; Delete
-
-; Adjust to fit RAM mapping
-STACK:          EQU     00FFFH          ; STACK (Last RAM address)
-STKLMT:		EQU	STACK-512
-OCSW:           EQU     00800H          ;SWITCH FOR OUTPUT
-CURRNT:         EQU     OCSW+1          ;POINTS FOR OUTPUT
-STKGOS:         EQU     OCSW+3          ;SAVES SP IN 'GOSUB'
-VARNXT:         EQU     OCSW+5          ;TEMP STORAGE
-STKINP:         EQU     OCSW+7          ;SAVES SP IN 'INPUT'
-LOPVAR:         EQU     OCSW+9          ;'FOR' LOOP SAVE AREA
-LOPINC:         EQU     OCSW+11         ;INCREMENT
-LOPLMT:         EQU     OCSW+13         ;LIMIT
-LOPLN:          EQU     OCSW+15         ;LINE NUMBER
-LOPPT:          EQU     OCSW+17         ;TEXT POINTER
-RANPNT:         EQU     OCSW+19         ;RANDOM NUMBER POINTER
-TXTUNF:         EQU     OCSW+21         ;->UNFILLED TEXT AREA
-TXTBGN:         EQU     OCSW+23         ;TEXT SAVE AREA BEGINS
-
-TXTEND:         EQU     STKLMT          ;TEXT SAVE AREA ENDS
 
 
 ;*************************************************************
@@ -113,7 +50,13 @@ RST08:  EX (SP),HL                      ;*** TSTC OR RST 08H ***
 CRLF:
         LD A,CR                         ;*** CRLF ***
 
-RST10:  JP OUTC                         ;REST OF THIS AT OUTC
+RST10:
+	JP OUTC                         ;REST OF THIS AT OUTC
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
 
 RST18:  CALL EXPR2                      ;*** EXPR OR RST 18H ***
         PUSH HL                         ;EVALUATE AN EXPRESSION
@@ -1731,22 +1674,31 @@ EX5:
         LD H,A
         POP AF                          ;CLEAN UP THE GABAGE
         JP (HL)                         ;AND WE GO DO IT
-;-------------------------------------------------------------------------------
-;///////////////////////////////////////////////////////////////////////////////
-;-------------------------------------------------------------------------------
-;COMPUTER SPECIFIC ROUTINES.
-;-------------------------------------------------------------------------------
-        RET
-;-------------------------------------------------------------------------------
-;///////////////////////////////////////////////////////////////////////////////
-;-------------------------------------------------------------------------------
 
-LSTROM:                                 ;ALL ABOVE CAN BE ROM
-                    ;HERE DOWN MUST BE RAM
-        ;ORG  0800H
-        ;DB   0x00   		; set OCSW to 0
-        ;ORG  0F00H ; Last 256 bytes of RAM
-VARBGN: DS   55                         ;VARIABLE @(0)
-BUFFER: DS   64                         ;INPUT BUFFER
-BUFEND: DS   1                          ;BUFFER ENDS
-        END
+;-------------------------------------------------------------------------------
+;///////////////////////////////////////////////////////////////////////////////
+;-------------------------------------------------------------------------------
+	;; Prior to this, everything is ROM
+	;; RAM organization
+LSTROM:
+
+VARBGN: 	DS  55        ;VARIABLE @(0)
+BUFFER: 	DS  64        ;INPUT BUFFER
+BUFEND: 	DS   1        ;BUFFER ENDS
+CURRNT:         DS   2	      ;POINTS FOR OUTPUT
+STKGOS:         DS   2        ;SAVES SP IN 'GOSUB'
+VARNXT:         DS   2	      ;TEMP STORAGE
+STKINP:         DS   2        ;SAVES SP IN 'INPUT'
+LOPVAR:         DS   2        ;'FOR' LOOP SAVE AREA
+LOPINC:         DS   2        ;INCREMENT
+LOPLMT:         DS   2        ;LIMIT
+LOPLN:          DS   2        ;LINE NUMBER
+LOPPT:          DS   2        ;TEXT POINTER
+RANPNT:         DS   2        ;RANDOM NUMBER POINTER
+TXTUNF:         DS   2        ;->UNFILLED TEXT AREA
+TXTBGN:         DS 1024        ;TEXT SAVE AREA BEGINS
+TXTEND:                       ;TEXT SAVE AREA ENDS
+STKLMT:	        DS 1024	      ;STACK BASE
+STACK:	        DS   1	      ;STACK POINTER
+
+	END
