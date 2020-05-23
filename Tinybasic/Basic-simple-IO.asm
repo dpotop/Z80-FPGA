@@ -62,7 +62,8 @@ ESC:            EQU     01BH            ; Escape
 DEL:            EQU     07FH            ; Delete
 
 ; Adjust to fit RAM mapping
-STACK:          EQU     03FFFH          ; STACK (Last RAM address)
+STACK:          EQU     00FFFH          ; STACK (Last RAM address)
+STKLMT:		EQU	STACK-512
 OCSW:           EQU     00800H          ;SWITCH FOR OUTPUT
 CURRNT:         EQU     OCSW+1          ;POINTS FOR OUTPUT
 STKGOS:         EQU     OCSW+3          ;SAVES SP IN 'GOSUB'
@@ -77,7 +78,7 @@ RANPNT:         EQU     OCSW+19         ;RANDOM NUMBER POINTER
 TXTUNF:         EQU     OCSW+21         ;->UNFILLED TEXT AREA
 TXTBGN:         EQU     OCSW+23         ;TEXT SAVE AREA BEGINS
 
-TXTEND:         EQU     00F00H          ;TEXT SAVE AREA ENDS
+TXTEND:         EQU     STKLMT          ;TEXT SAVE AREA ENDS
 
 
 ;*************************************************************
@@ -1580,19 +1581,25 @@ PATLOP:
 OUTC:
         OUT (SerialPort),A      ;SEND THE BYTE
         CP CR
-        RET NZ
+	JP NZ,OUTC2
         LD A,LF
 	OUT (SerialPort),A
         LD A,CR
+OUTC2:	
         RET
+
 CHKIO:
 	; DPB: read one character. If it's zero,
-	; it means no input is available 	
+				; it means no input is available
+	; LD A, 0xEE
+	;OUT (SerialPort), A
 	IN A,(SerialPort)
-        RET Z 			; Return if no character
-        CP 03H                          ;IS IT CONTROL-C?
-        RET NZ                          ;If not, return
-        JP RSTART                       ;YES, RESTART TBI
+	AND A   			; Check if it's zero
+        JP Z,CHKIO2 			; Return if no character
+	;OUT (SerialPort), A		; Debug print
+        CP 03H                          ; IS IT CONTROL-C?
+        JP Z,RSTART                     ; YES, RESTART TBI
+CHKIO2:	RET
 
 
 MSG1:   DB   ESC,"[2J",ESC,"[H"         ;SCREEN CLEAR
@@ -1736,11 +1743,10 @@ EX5:
 
 LSTROM:                                 ;ALL ABOVE CAN BE ROM
                     ;HERE DOWN MUST BE RAM
-        ORG  0800H
-        DB   0x00
-        ORG  0F00H ; Last 256 bytes of RAM
+        ;ORG  0800H
+        ;DB   0x00   		; set OCSW to 0
+        ;ORG  0F00H ; Last 256 bytes of RAM
 VARBGN: DS   55                         ;VARIABLE @(0)
 BUFFER: DS   64                         ;INPUT BUFFER
 BUFEND: DS   1                          ;BUFFER ENDS
-STKLMT: DS   1                          ;TOP LIMIT FOR STACK
         END
