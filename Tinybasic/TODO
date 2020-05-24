@@ -1,0 +1,4 @@
+1. Test the code - lots of changes are untested
+2. Repair the NMI address issue (it's now off by 1 byte due to
+   a jump)
+3. Isolate printing routines better.
