@@ -7,6 +7,8 @@ SOURCES = \
 	error.asm \
 	io.asm \
 	ram.asm \
+	print.asm \
+	statements.asm \
 
 
 all: prog-bin.h
