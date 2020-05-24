@@ -1,3 +1,14 @@
+SOURCES = \
+	ascii.asm \
+	basic.asm \
+	init.asm \
+	keywords.asm \
+	vectors.asm \
+	error.asm \
+	io.asm \
+	ram.asm \
+
+
 all: prog-bin.h
 
 prog-bin.h: basic.bin convert.exe
@@ -6,7 +17,7 @@ prog-bin.h: basic.bin convert.exe
 convert.exe: convert.c
 	gcc convert.c -o convert.exe
 
-basic.bin: basic.asm ascii.asm io.asm
+basic.bin: $(SOURCES)
 	z80asm basic.asm -o basic.bin -l 2> basic.lst
 
 clean:

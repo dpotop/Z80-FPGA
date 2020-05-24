@@ -15,150 +15,10 @@ include "ascii.asm"
 ; IN THIS SECTION. THEY CAN BE REACHED WITH 'CALL'.
 ;*************************************************************
 
-DWA:    MACRO WHERE
-	DW   WHERE
-				; DB   (WHERE >> 8) + 128	
-				; DB   WHERE & 0FFH
-        ENDM
 
         ORG  0000H
 
-START:
-        LD SP,STACK                     ;*** COLD START ***
-        LD A,0FFH
-        JP INIT
-
-RST08:  EX (SP),HL                      ;*** TSTC OR RST 08H ***
-        RST 28H                         ;IGNORE BLANKS AND
-        CP (HL)                         ;TEST CHARACTER
-        JP TC1                          ;REST OF THIS IS AT TC1
-
-CRLF:
-        LD A,CR                         ;*** CRLF ***
-
-RST10:
-	JP OUTC                         ;REST OF THIS AT OUTC
-	NOP				; Need these NOPs in order to
-	NOP				; align RST18
-	NOP
-	NOP
-	NOP
-
-RST18:  CALL EXPR2                      ;*** EXPR OR RST 18H ***
-        PUSH HL                         ;EVALUATE AN EXPRESSION
-        JP EXPR1                        ;REST OF IT AT EXPR1
-        NOP
-
-RST20:  LD A,H                          ;*** COMP OR RST 20H ***
-        CP D                            ;COMPARE HL WITH DE
-        RET NZ                          ;RETURN CORRECT C AND
-        LD A,L                          ;Z FLAGS
-        CP E                            ;BUT OLD A IS LOST
-        RET
-        NOP
-	NOP
-
-SS1:
-RST28:  LD A,(DE)                       ;*** IGNBLK/RST 28H ***
-        CP 20H                          ;IGNORE BLANKS
-        RET NZ                          ;IN TEXT (WHERE DE->)
-        INC DE                          ;AND RETURN THE FIRST
-        JP SS1                          ;NON-BLANK CHAR. IN A
-
-RST30:  POP AF                          ;*** FINISH/RST 30H ***
-        CALL FIN                        ;CHECK END OF COMMAND
-        JP QWHAT                        ;PRINT "WHAT?" IF WRONG
-        NOP
-
-RST38:  RST 28H                         ;*** TSTV OR RST 38H ***
-        SUB 40H                         ;TEST VARIABLES
-        RET C                           ;C:NOT A VARIABLE
-        JR NZ,TV1                       ;NOT "@" ARRAY
-        INC DE                          ;IT IS THE "@" ARRAY
-        CALL PARN                       ;@ SHOULD BE FOLLOWED
-        ADD HL,HL                       ;BY (EXPR) AS ITS INDEX
-        JR C,QHOW                       ;IS INDEX TOO BIG?
-        PUSH DE                         ;WILL IT OVERWRITE
-        EX DE,HL                        ;TEXT?
-        CALL SIZE                       ;FIND SIZE OF FREE
-        RST 20H                         ;AND CHECK THAT
-        JP C,ASORRY                     ;IF SO, SAY "SORRY"
-        LD HL,VARBGN                    ;IF NOT GET ADDRESS
-        CALL SUBDE                      ;OF @(EXPR) AND PUT IT
-        POP DE                          ;IN HL
-        RET                             ;C FLAG IS CLEARED
-
-TV1:
-        CP 1BH                          ;NOT @, IS IT A TO Z?
-        CCF                             ;IF NOT RETURN C FLAG
-        RET C
-        INC DE                          ;IF A THROUGH Z
-        LD HL,VARBGN                    ;COMPUTE ADDRESS OF
-        RLCA                            ;THAT VARIABLE
-        ADD A,L                         ;AND RETURN IT IN HL
-        LD L,A                          ;WITH C FLAG CLEARED
-        LD A,00H
-        ADC A,H
-        LD H,A
-        RET
-
-NMI66:                                  ;MUST BE AT 66H
-        RETI
-
-TC1:
-        INC HL                          ;COMPARE THE BYTE THAT
-        JR Z,TC2                        ;FOLLOWS THE RST INST.
-        PUSH BC                         ;WITH THE TEXT (DE->)
-        LD C,(HL)                       ;IF NOT =, ADD THE 2ND
-        LD B,00H                        ;BYTE THAT FOLLOWS THE
-        ADD HL,BC                       ;RST TO THE OLD PC
-        POP BC                          ;I.E., DO A RELATIVE
-        DEC DE                          ;JUMP IF NOT =
-
-TC2:
-        INC DE                          ;IF =, SKIP THOSE BYTES
-        INC HL                          ;AND CONTINUE
-        EX (SP),HL
-        RET
-
-TSTNUM:
-        LD HL,0000H                     ;*** TSTNUM ***
-        LD B,H                          ;TEST IF THE TEXT IS
-        RST 28H                         ;A NUMBER
-
-TN1:
-        CP 30H                          ;IF NOT, RETURN 0 IN
-        RET C                           ;B AND HL
-        CP 3AH                          ;IF NUMBERS, CONVERT
-        RET NC                          ;TO BINARY IN HL AND
-        LD A,0F0H                       ;SET B TO # OF DIGITS
-        AND H                           ;IF H>255, THERE IS NO
-        JR NZ,QHOW                      ;ROOM FOR NEXT DIGIT
-        INC B                           ;B COUNTS # OF DIGITS
-        PUSH BC
-        LD B,H                          ;HL=10*HL+(NEW DIGIT)
-        LD C,L
-        ADD HL,HL                       ;WHERE 10* IS DONE BY
-        ADD HL,HL                       ;SHIFT AND ADD
-        ADD HL,BC
-        ADD HL,HL
-        LD A,(DE)                       ;AND (DIGIT) IS FROM
-        INC DE                          ;STRIPPING THE ASCII
-        AND 0FH                         ;CODE
-        ADD A,L
-        LD L,A
-        LD A,00H
-        ADC A,H
-        LD H,A
-        POP BC
-        LD A,(DE)                       ;DO THIS DIGIT AFTER
-        JP P,TN1                        ;DIGIT. S SAYS OVERFLOW
-
-QHOW:
-        PUSH DE                         ;*** ERROR "HOW?" ***
-AHOW:
-        LD DE,HOW
-        JP ERROR_ROUTINE
+include "vectors.asm"
 
 
 ;*************************************************************
@@ -194,12 +54,15 @@ AHOW:
 ; (SEE NEXT SECTION). "CURRNT" SHOULD POINT TO A 0.
 ;*************************************************************
 
+	;; Message saying it's OK
+MSG_OK:     DB "OK",CR
+	
 RSTART:
         LD SP,STACK
 
 ST1:
         CALL CRLF                       ;AND JUMP TO HERE
-        LD DE,OK                        ;DE->STRING
+        LD DE,MSG_OK                    ;DE->STRING
         SUB A                           ;A=0
         CALL PRTSTG                     ;PRINT STRING UNTIL CR
         LD HL,ST2+1                     ;LITERAL 0
@@ -1118,42 +981,8 @@ ENDCHK:
         RST 28H                         ;*** ENDCHK ***
         CP CR                           ;END WITH CR?
         RET Z                           ;OK, ELSE SAY: "WHAT?"
-QWHAT:
-        PUSH DE                         ;*** QWHAT ***
-AWHAT:
-        LD DE,WHAT                      ;*** AWHAT ***
-ERROR_ROUTINE:
-        SUB A                           ;*** ERROR ***
-        CALL PRTSTG                     ;PRINT 'WHAT?', 'HOW?'
-        POP DE                          ;OR 'SORRY'
-        LD A,(DE)                       ;SAVE THE CHARACTER
-        PUSH AF                         ;AT WHERE OLD DE ->
-        SUB A                           ;AND PUT A 0 THERE
-        LD (DE),A
-        LD HL,(CURRNT)                  ;GET CURRENT LINE #
-        PUSH HL
-        LD A,(HL)                       ;CHECK THE VALUE
-        INC HL
-        OR (HL)
-        POP DE
-        JP Z,RSTART                     ;IF ZERO, JUST RESTART
-        LD A,(HL)                       ;IF NEGATIVE,
-        OR A
-        JP M,INPERR                     ;REDO INPUT
-        CALL PRTLN                      ;ELSE PRINT THE LINE
-        DEC DE                          ;UPTO WHERE THE 0 IS
-        POP AF                          ;RESTORE THE CHARACTER
-        LD (DE),A
-        LD A,3FH                        ;PRINT A "?"
-        RST 10H
-        SUB A                           ;AND THE REST OF THE
-        CALL PRTSTG                     ;LINE
-        JP RSTART                       ;THEN RESTART
-QSORRY:
-        PUSH DE                         ;*** QSORRY ***
-ASORRY:
-        LD DE,SORRY                     ;*** ASORRY ***
-        JR ERROR_ROUTINE
+	JP QWHAT
+
 ;*************************************************************
 ;
 ; *** GETLN *** FNDLN (& FRIENDS) ***
@@ -1250,6 +1079,7 @@ FNDSKP:
         JR NZ,FL2                       ;KEEP LOOKING
         INC DE                          ;FOUND CR, SKIP OVER
         JR FL1                          ;CHECK IF END OF TEXT
+	
 ;*************************************************************
 ;
 ; *** PRTSTG *** QTSTG *** PRTNUM *** & PRTLN ***
@@ -1458,206 +1288,18 @@ PU1:
         PUSH HL
         PUSH BC                         ;BC = RETURN ADDR.
         RET
-;*************************************************************
-;
-; *** OUTC *** & CHKIO ***
-;
-; THESE ARE THE ONLY I/O ROUTINES IN TBI.
-; 'OUTC' IS CONTROLLED BY A SOFTWARE SWITCH 'OCSW'.  IF OCSW=0
-; 'OUTC' WILL JUST RETURN TO THE CALLER.  IF OCSW IS NOT 0,
-; IT WILL OUTPUT THE BYTE IN A.  IF THAT IS A CR, A LF IS ALSO
-; SEND OUT.  ONLY THE FLAGS MAY BE CHANGED AT RETURN. ALL REG.
-; ARE RESTORED.
-;
-; 'CHKIO' CHECKS THE INPUT.  IF NO INPUT, IT WILL RETURN TO
-; THE CALLER WITH THE Z FLAG SET.  IF THERE IS INPUT, Z FLAG
-; IS CLEARED AND THE INPUT BYTE IS IN A.  HOWEVER, IF THE
-; INPUT IS A CONTROL-O, THE 'OCSW' SWITCH IS COMPLIMENTED, AND
-; Z FLAG IS RETURNED.  IF A CONTROL-C IS READ, 'CHKIO' WILL
-; RESTART TBI AND DO NOT RETURN TO THE CALLER.
-;
-; Do not modify these routines.  Routines requiring
-; modification are : SERIAL_INIT, RX_RDY, and TX_RDY.
-;*************************************************************
 
-INIT:
-        DI
 
-        SUB A
-        LD DE,MSG1          ;PRINT THE BOOT MESSAGES
-        CALL PRTSTG
-        LD DE,MSG2
-        CALL PRTSTG
-        LD HL,START
-        LD (RANPNT),HL
-        LD HL,TXTBGN
-        LD (TXTUNF),HL
-        JP RSTART
-
+include "init.asm"
 include "io.asm"
+include "keywords.asm"
+include "error.asm"
 	
-;*************************************************************
-;
-; *** TABLES *** DIRECT *** & EXEC ***
-;
-; THIS SECTION OF THE CODE TESTS A STRING AGAINST A TABLE.
-; WHEN A MATCH IS FOUND, CONTROL IS TRANSFERED TO THE SECTION
-; OF CODE ACCORDING TO THE TABLE.
-;
-; AT 'EXEC', DE SHOULD POINT TO THE STRING AND HL SHOULD POINT
-; TO THE TABLE-1.  AT 'DIRECT', DE SHOULD POINT TO THE STRING.
-; HL WILL BE SET UP TO POINT TO TAB1-1, WHICH IS THE TABLE OF
-; ALL DIRECT AND STATEMENT COMMANDS.
-;
-; A '.' IN THE STRING WILL TERMINATE THE TEST AND THE PARTIAL
-; MATCH WILL BE CONSIDERED AS A MATCH.  E.G., 'P.', 'PR.',
-; 'PRI.', 'PRIN.', OR 'PRINT' WILL ALL MATCH 'PRINT'.
-;
-; THE TABLE CONSISTS OF ANY NUMBER OF ITEMS.  EACH ITEM
-; IS A STRING OF CHARACTERS WITH BIT 7 SET TO 0 AND
-; A JUMP ADDRESS STORED HI-LOW WITH BIT 7 OF THE HIGH
-; BYTE SET TO 1.
-;
-; END OF TABLE IS AN ITEM WITH A JUMP ADDRESS ONLY.  IF THE
-; STRING DOES NOT MATCH ANY OF THE OTHER ITEMS, IT WILL
-; MATCH THIS NULL ITEM AS DEFAULT.
-;*************************************************************
-
-TAB1:                                   ;DIRECT COMMANDS
-        DB 'LIST'
-        DWA LIST
-        DB 'RUN'
-        DWA RUN
-        DB 'NEW'
-        DWA NEW
-TAB2:                                   ;DIRECT/STATEMENT
-        DB 'NEXT'
-        DWA NEXT
-        DB 'LET'
-        DWA LET
-        DB 'IF'
-        DWA IFF
-        DB 'GOTO'
-        DWA GOTO
-        DB 'GOSUB'
-        DWA GOSUB
-        DB 'RETURN'
-        DWA RETURN
-        DB 'REM'
-        DWA REM
-        DB 'FOR'
-        DWA FOR
-        DB 'INPUT'
-        DWA INPUT
-        DB 'PRINT'
-        DWA PRINT
-        DB 'STOP'
-        DWA STOP
-        DWA DEFLT
-TAB4:                                   ;FUNCTIONS
-        DB 'RND'
-        DWA RND
-        DB 'ABS'
-        DWA ABS
-        DB 'SIZE'
-        DWA SIZE
-        DWA XP40
-TAB5:                                   ;"TO" IN "FOR"
-        DB 'TO'
-        DWA FR1
-        DWA QWHAT
-TAB6:                                   ;"STEP" IN "FOR"
-        DB 'STEP'
-        DWA FR2
-        DWA FR3
-TAB8:                                   ;RELATION OPERATORS
-        DB '>='
-        DWA XP11
-        DB '#'
-        DWA XP12
-        DB '>'
-        DWA XP13
-        DB '='
-        DWA XP15
-        DB '<='
-        DWA XP14
-        DB '<'
-        DWA XP16
-        DWA XP17
-DIRECT: LD HL,TAB1-1                   ;*** DIRECT ***
-EXEC:                                   ;*** EXEC ***
-EX0:    RST 28H                         ;IGNORE LEADING BLANKS
-        PUSH DE                         ;SAVE POINTER
-EX1:
-        LD A,(DE)                       ;IF FOUND '.' IN STRING
-        INC DE                          ;BEFORE ANY MISMATCH
-        CP 23H                          ;WE DECLARE A MATCH
-        JR Z,EX3
-        INC HL                          ;HL->TABLE
-        CP (HL)                         ;IF MATCH, TEST NEXT
-        JR Z,EX1
-        LD A,7FH                        ;ELSE SEE IF BIT 7
-        DEC DE                          ;OF TABLE IS SET, WHICH
-        CP (HL)                         ;IS THE JUMP ADDR. (HI)
-        JR C,EX5                        ;C:YES, MATCHED
-EX2:
-        INC HL                          ;NC:NO, FIND JUMP ADDR.
-        CP (HL)
-        JR NC,EX2
-        INC HL                          ;BUMP TO NEXT TAB. ITEM
-        POP DE                          ;RESTORE STRING POINTER
-        JR EX0                          ;TEST AGAINST NEXT ITEM
-EX3:
-        LD A,7FH                        ;PARTIAL MATCH, FIND
-EX4:
-        INC HL                          ;JUMP ADDR., WHICH IS
-        CP (HL)                         ;FLAGGED BY BIT 7
-        JR NC,EX4
-EX5:
-        LD A,(HL)                       ;LOAD HL WITH THE JUMP
-        INC HL                          ;ADDRESS FROM THE TABLE
-        LD L,(HL)
-        AND 7FH                         ;MASK OFF BIT 7
-        LD H,A
-        POP AF                          ;CLEAN UP THE GABAGE
-        JP (HL)                         ;AND WE GO DO IT
-
 ;-------------------------------------------------------------------------------
 ;///////////////////////////////////////////////////////////////////////////////
 ;-------------------------------------------------------------------------------
 
-HOW:    DB "HOW?",CR
-OK:     DB "OK",CR
-WHAT:   DB "WHAT?",CR
-SORRY:  DB "SORRY",CR
-MSG1:   DB   ESC,"[2J",ESC,"[H"         ;SCREEN CLEAR
-        DB   'Z80 TINY BASIC 2.0g',CR       ;BOOT MESSAGE
-MSG2:   DB   'PORTED BY D. GABBARD, 2017',CR
 
-
-
-
-	;; Prior to this, everything is ROM
-	;; RAM organization
-LSTROM:
-
-VARBGN: 	DS  55        ;VARIABLE @(0)
-BUFFER: 	DS  64        ;INPUT BUFFER
-BUFEND: 	DS   1        ;BUFFER ENDS
-CURRNT:         DS   2	      ;POINTS FOR OUTPUT
-STKGOS:         DS   2        ;SAVES SP IN 'GOSUB'
-VARNXT:         DS   2	      ;TEMP STORAGE
-STKINP:         DS   2        ;SAVES SP IN 'INPUT'
-LOPVAR:         DS   2        ;'FOR' LOOP SAVE AREA
-LOPINC:         DS   2        ;INCREMENT
-LOPLMT:         DS   2        ;LIMIT
-LOPLN:          DS   2        ;LINE NUMBER
-LOPPT:          DS   2        ;TEXT POINTER
-RANPNT:         DS   2        ;RANDOM NUMBER POINTER
-TXTUNF:         DS   2        ;->UNFILLED TEXT AREA
-TXTBGN:         DS 1024        ;TEXT SAVE AREA BEGINS
-TXTEND:                       ;TEXT SAVE AREA ENDS
-STKLMT:	        DS 1024	      ;STACK BASE
-STACK:	        DS   1	      ;STACK POINTER
+include "ram.asm"
 
 	END
