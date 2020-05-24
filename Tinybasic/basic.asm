@@ -1,23 +1,6 @@
 	;; Copyright in the parent project from which I forked	
 
-SerialPort:     EQU     010H            ; This the serial I/O port
-
-
-SPACE:          EQU     020H            ; Space
-TAB:            EQU     09H             ; HORIZONTAL TAB
-CTRLC:          EQU     03H             ; Control "C"
-CTRLG:          EQU     07H             ; Control "G"
-BKSP:           EQU     08H             ; Back space
-LF:             EQU     0AH             ; Line feed
-CS:             EQU     0CH             ; Clear screen
-CR:             EQU     0DH             ; Carriage return
-CTRLO:          EQU     0FH             ; Control "O"
-CTRLQ:          EQU     011H            ; Control "Q"
-CTRLR:          EQU     012H            ; Control "R"
-CTRLS:          EQU     013H            ; Control "S"
-CTRLU:          EQU     015H            ; Control "U"
-ESC:            EQU     01BH            ; Escape
-DEL:            EQU     07FH            ; Delete
+include "ascii.asm"
 
 
 ;*************************************************************
@@ -33,8 +16,9 @@ DEL:            EQU     07FH            ; Delete
 ;*************************************************************
 
 DWA:    MACRO WHERE
-        DB   (WHERE >> 8) + 128
-        DB   WHERE & 0FFH
+	DW   WHERE
+				; DB   (WHERE >> 8) + 128	
+				; DB   WHERE & 0FFH
         ENDM
 
         ORG  0000H
@@ -1509,27 +1493,9 @@ INIT:
         LD HL,TXTBGN
         LD (TXTUNF),HL
         JP RSTART
-OUTC:
-        OUT (SerialPort),A      ;SEND THE BYTE
-        CP CR
-	JP NZ,OUTC2
-        LD A,LF
-	OUT (SerialPort),A
-        LD A,CR
-OUTC2:	
-        RET
 
-CHKIO:
-	; DPB: read one character. If it's zero,
-	; it means no input is available
-	IN A,(SerialPort)
-	AND A   			; Check if it's zero
-        JP Z,CHKIO2 			; Return if no character
-        CP 03H                          ; IS IT CONTROL-C?
-        JP Z,RSTART                     ; YES, RESTART TBI
-CHKIO2:	RET
-
-
+include "io.asm"
+	
 ;*************************************************************
 ;
 ; *** TABLES *** DIRECT *** & EXEC ***

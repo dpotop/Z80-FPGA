@@ -1,5 +1,3 @@
-## z80asm Basic.asm -o Basic.bin -l 2> Basic.lst
-
 all: prog-bin.h
 
 prog-bin.h: basic.bin convert.exe
@@ -8,7 +6,7 @@ prog-bin.h: basic.bin convert.exe
 convert.exe: convert.c
 	gcc convert.c -o convert.exe
 
-basic.bin: basic.asm
+basic.bin: basic.asm ascii.asm io.asm
 	z80asm basic.asm -o basic.bin -l 2> basic.lst
 
 clean:
