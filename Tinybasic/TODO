@@ -2,3 +2,5 @@
 2. Repair the NMI address issue (it's now off by 1 byte due to
    a jump)
 3. Isolate printing routines better.
+4. There are some DB in the code that seem to be misinterpreted
+   opcodes. Take a look at them and clean them up.
