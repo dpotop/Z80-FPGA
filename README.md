@@ -1,4 +1,4 @@
-
+![z80 and its Arduino umbilical cord](https://github.com/dpotop/Z80-hobby/blob/master/DSC_0046.JPG)
 
 # Z80-based hobby computer
 
@@ -24,3 +24,7 @@ kit, and the only thing to do some soldering.
 However, this is no longer true. In developing this project, I take 
 advantage of the ability to use microcontroller boards (Arduino in 
 my case) to partially or fully control the execution of hardware.
+
+Links for the UART step:
+* https://z80project.wordpress.com/2014/08/21/uart-serial-terminal-output-test/
+* https://electronics.stackexchange.com/questions/94658/using-uart-clock-3-6864-mhz-for-a-microcontroller

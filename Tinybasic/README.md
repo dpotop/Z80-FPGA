@@ -4,7 +4,11 @@ Obijuan's code is already quite size-optimized, but there is space for
 further improvement (which I already started).
 
 The next step will be to make the interpreter modular to make it easier to
-understand. Then, possibly work towards more compilation and less interpreting. 
+understand. The manual of z80asm supporting this is here:
+* https://www.nongnu.org/z80asm/directives.html
+* https://www.nongnu.org/z80asm/usage.html
+
+Then, possibly work towards more compilation and less interpreting. 
 Of course, as the I/O interface evolves this may evolve, too.
 
 Z80 instruction set
