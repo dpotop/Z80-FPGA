@@ -1,4 +1,4 @@
-![z80 and its Arduino umbilical cord](https://github.com/dpotop/Z80-hobby/blob/master/DSC_0046.JPG| width=100)
+![z80 and its Arduino umbilical cord](https://github.com/dpotop/Z80-hobby/blob/master/DSC_0046.JPG&s=200)
 
 # Z80-based hobby computer
 
