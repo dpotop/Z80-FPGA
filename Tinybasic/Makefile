@@ -11,10 +11,10 @@ SOURCES = \
 	statements.asm \
 
 
-all: prog-bin.h
+all: basic.h
 
-prog-bin.h: basic.bin convert.exe
-	./convert.exe > prog-bin.h
+basic.h: basic.bin convert.exe
+	./convert.exe > basic.h
 
 convert.exe: convert.c
 	gcc convert.c -o convert.exe
@@ -23,4 +23,4 @@ basic.bin: $(SOURCES)
 	z80asm basic.asm -o basic.bin -l 2> basic.lst
 
 clean:
-	rm -f basic.bin basic.lst convert.exe prog-bin.h
+	rm -f basic.bin basic.lst convert.exe prog-bin.h basic.h
