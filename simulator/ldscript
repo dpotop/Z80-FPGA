@@ -1,0 +1,18 @@
+ENTRY(main)
+ 
+SECTIONS
+{
+    
+    . = 0x0;
+    .text :
+    {
+        KEEP(*(.text.boot))
+        *(.text)
+    }
+    .data :
+    {
+        *(.rodata)
+        *(.data)
+        *(.bss)
+    }
+}
